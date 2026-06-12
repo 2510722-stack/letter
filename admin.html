@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>포스트잇 board 관리자 센터 📋</title>
+  <!-- Google Fonts (Noto Sans KR) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS Play CDN -->
+  <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background-color: #f1f5f9;
+      background-image: 
+        linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    /* Tape simulation on postit cards */
+    .postit-tape-admin {
+      position: absolute;
+      top: -8px;
+      left: 20px;
+      width: 40px;
+      height: 12px;
+      background-color: rgba(254, 240, 138, 0.55);
+      border-left: 1px dashed rgba(0,0,0,0.1);
+      border-right: 1px dashed rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+  <!-- PASSWORD LOGIN PANEL -->
+  <main id="login-container" class="w-full max-w-[400px] bg-white border border-slate-200 rounded-[28px] shadow-xl p-6 md:p-8 relative z-10">
+    
+    <!-- Quick Tab Navigation Menu -->
+    <div class="flex border-b border-slate-100 pb-4 mb-5 select-none w-full">
+      <a href="admin.html" class="flex-1 text-center py-2 text-xs font-black text-slate-800 border-b-2 border-slate-800 transition-all">
+        📋 관리자 인증
+      </a>
+      <a href="index.html" class="flex-1 text-center py-2 text-xs font-bold text-slate-400 hover:text-slate-600 transition-all">
+        📺 실시간 전광판
+      </a>
+      <a href="letter.html" class="flex-1 text-center py-2 text-xs font-bold text-slate-400 hover:text-slate-600 transition-all">
+        ✏️ 포스트잇 보내기
+      </a>
+    </div>
+
+    <div class="text-center mb-6">
+      <div class="text-4xl mb-3">🔒</div>
+      <h1 class="text-xl font-black tracking-tight text-slate-800 mb-1">관리자 인증</h1>
+      <p class="text-xs text-slate-500 font-light">선생님 전용 게시판 관리 비밀번호를 입력해 주세요.</p>
+    </div>
+
+    <form id="loginForm" onsubmit="return false;" class="space-y-4">
+      <div>
+        <input 
+          type="password" 
+          id="passwordInput" 
+          placeholder="비밀번호 입력 (초기: 1234)" 
+          required
+          class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm placeholder:text-slate-400 text-slate-800 text-center focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
+        >
+      </div>
+      <!-- Error Message indicator -->
+      <p id="errorMsg" class="text-rose-500 text-xs text-center font-bold opacity-0 transition-opacity duration-200 h-4">비밀번호가 틀렸어요 😅</p>
+
+      <button 
+        type="submit" 
+        id="loginBtn"
+        class="w-full py-3 rounded-xl font-bold text-sm text-center shadow-md text-white bg-slate-800 hover:bg-slate-700 hover:-translate-y-[1px] active:translate-y-0 transition-all duration-200 cursor-pointer"
+      >
+        인증하고 칠판 관리하기
+      </button>
+    </form>
+  </main>
+
+  <!-- ADMIN MANAGEMENT CABINET CONTENT (Hidden initially) -->
+  <div id="admin-cabinet" class="hidden w-full max-w-[720px] my-4 mx-auto space-y-6 relative z-10">
+    
+    <!-- Top Dashboard Header Navigation -->
+    <header class="flex flex-col md:flex-row items-center justify-between gap-4 bg-white border border-slate-200/80 p-5 rounded-[22px] shadow-sm">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">📋</span>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg font-black text-slate-800 tracking-tight">포스트잇 칠판 관리 시스템</h1>
+            <span class="text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-200 px-1.5 py-0.2 rounded-md font-bold">인증완료</span>
+          </div>
+          <p class="text-[11px] text-slate-500 font-light mt-0.5">학생들의 포스트잇 노출 상태와 좋아요, 답글을 관리합니다</p>
+        </div>
+      </div>
+      
+      <!-- Navigational exit shortcuts -->
+      <div class="flex gap-2 shrink-0 select-none">
+        <a 
+          href="index.html" 
+          class="px-3.5 py-2 hover:bg-slate-50 text-slate-700 bg-white border border-slate-200 rounded-xl text-xs font-black transition-all cursor-pointer shadow-sm"
+        >
+          📺 전광판 가기
+        </a>
+        <a 
+          href="letter.html" 
+          class="px-3.5 py-2 hover:bg-slate-50 text-slate-700 bg-white border border-slate-200 rounded-xl text-xs font-black transition-all cursor-pointer shadow-sm"
+        >
+          ✏️ 붙이기 화면
+        </a>
+      </div>
+      
+      <!-- Real-time dynamic statistical badge panel -->
+      <div class="flex gap-2 shrink-0">
+        <div class="px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-xl text-center min-w-[70px]">
+          <div class="text-[10px] text-slate-500 font-medium">전체</div>
+          <div id="stat-total" class="text-xs font-black text-slate-800">0</div>
+        </div>
+        <div class="px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-xl text-center min-w-[70px]">
+          <div class="text-[10px] text-amber-600 font-medium font-bold">표시중</div>
+          <div id="stat-visible" class="text-xs font-black text-amber-700">0</div>
+        </div>
+        <div class="px-3 py-1.5 bg-rose-50 border border-rose-200 rounded-xl text-center min-w-[70px]">
+          <div class="text-[10px] text-rose-600 font-medium font-bold">숨김</div>
+          <div id="stat-hidden" class="text-xs font-black text-rose-700">0</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Bulk control layout toolbox -->
+    <div class="bg-white border border-slate-200 p-4 rounded-2xl flex flex-wrap gap-2 items-center justify-between shadow-xs">
+      <span class="text-xs font-extrabold text-slate-600">일괄 작업 도구</span>
+      <div class="flex flex-wrap gap-2">
+        <button 
+          id="btn-show-all"
+          class="px-3.5 py-2 text-xs font-extrabold rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-all hover:-translate-y-[1px] active:translate-y-0 cursor-pointer"
+        >
+          ✅ 전체 표시하기
+        </button>
+        <button 
+          id="btn-delete-hidden"
+          class="px-3.5 py-2 text-xs font-extrabold rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 transition-all hover:-translate-y-[1px] active:translate-y-0 cursor-pointer"
+        >
+          🗑 숨긴 포스트잇 삭제
+        </button>
+        <button 
+          id="btn-delete-all"
+          class="px-3.5 py-2 text-xs font-extrabold rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-all hover:-translate-y-[1px] active:translate-y-0 cursor-pointer"
+        >
+          ⚠️ 전체삭제 (초기화)
+        </button>
+      </div>
+    </div>
+
+    <!-- Letter list scroll cabinet wrap -->
+    <section class="space-y-4">
+      <h2 class="text-xs font-black text-slate-600 tracking-wider px-1">부착된 포스트잇 목록</h2>
+      <div id="letter-cabinet-list" class="space-y-4">
+        <!-- List of letters will pop up here with javascript -->
+        <div class="text-center py-12 text-slate-400 text-xs font-light">데이터를 실시간 로딩하고 있습니다...</div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Firebase Web Module Script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    // Password Configuration separation
+    const ADMIN_PW = '1234';
+
+    // Live Firebase Project Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjpXlCHHTI0V0kexoaDRmWVmM2PRmnNWs",
+      authDomain: "letter03-60590.firebaseapp.com",
+      databaseURL: "https://letter03-60590-default-rtdb.firebaseio.com",
+      projectId: "letter03-60590",
+      storageBucket: "letter03-60590.firebasestorage.app",
+      messagingSenderId: "762942548041",
+      appId: "1:762942548041:web:f54d6ffb5e6cd6bd3af798",
+      measurementId: "G-RGZW2XXZ93"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Login views elements
+    const loginForm = document.getElementById('loginForm');
+    const passwordInput = document.getElementById('passwordInput');
+    const errorMsg = document.getElementById('errorMsg');
+    const loginContainer = document.getElementById('login-container');
+    const adminCabinet = document.getElementById('admin-cabinet');
+
+    function attemptLogin() {
+      const pw = passwordInput.value;
+      if (pw === ADMIN_PW) {
+        // Unlock
+        document.body.className = "bg-[#f1f5f9] text-slate-800 min-h-screen px-4 md:px-8 py-8 flex items-start justify-center";
+        loginContainer.classList.add('hidden');
+        adminCabinet.classList.remove('hidden');
+        loadLetters();
+      } else {
+        errorMsg.style.opacity = '1';
+        passwordInput.value = '';
+        passwordInput.focus();
+        setTimeout(() => {
+          errorMsg.style.opacity = '0';
+        }, 2200);
+      }
+    }
+
+    loginForm.addEventListener('submit', attemptLogin);
+
+    // Date formatting helper
+    function getCleanTime(stamp) {
+      if (!stamp) return "알 수 없음";
+      const date = new Date(stamp);
+      return `${date.getMonth() + 1}/${date.getDate()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    }
+
+    let currentLetters = [];
+
+    function loadLetters() {
+      const letterRef = ref(db, 'letters');
+
+      onValue(letterRef, (snapshot) => {
+        const rawData = snapshot.val();
+        currentLetters = [];
+
+        if (rawData) {
+          Object.keys(rawData).forEach(key => {
+            currentLetters.push({ key, ...rawData[key] });
+          });
+        }
+
+        // Newest first sorting
+        currentLetters.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+        renderAdminView();
+      });
+    }
+
+    // Render Admin Management List
+    function renderAdminView() {
+      const listContainer = document.getElementById('letter-cabinet-list');
+      listContainer.innerHTML = '';
+
+      let total = currentLetters.length;
+      let visibleCount = currentLetters.filter(l => l.visible !== false).length;
+      let hiddenCount = total - visibleCount;
+
+      document.getElementById('stat-total').innerText = total;
+      document.getElementById('stat-visible').innerText = visibleCount;
+      document.getElementById('stat-hidden').innerText = hiddenCount;
+
+      if (total === 0) {
+        listContainer.innerHTML = `
+          <div class="text-center py-16 bg-white rounded-2xl border border-slate-200 text-slate-400 text-xs font-light shadow-xs">
+            아직 화이트보드에 부착된 포스트잇이 없습니다. ✏️
+          </div>
+        `;
+        return;
+      }
+
+      currentLetters.forEach(letter => {
+        const key = letter.key;
+        const visible = letter.visible !== false;
+        const color = letter.color || 'yellow';
+        
+        let pBg = 'bg-[#fffae0] border-yellow-300';
+        if (color === 'pink') {
+          pBg = 'bg-[#ffeef4] border-pink-300';
+        } else if (color === 'blue') {
+          pBg = 'bg-[#e0f2fe] border-sky-300';
+        }
+
+        const card = document.createElement('div');
+        card.className = `p-5 rounded-2xl border flex flex-col gap-4 relative transition-all duration-300 ${
+          visible ? 'bg-white border-slate-200/80 shadow-xs hover:border-slate-300' : 'bg-slate-50 border-slate-200 opacity-55'
+        }`;
+
+        // Parse replies
+        const repliesObj = letter.replies || {};
+        const repliesList = Object.keys(repliesObj).map(id => ({ id, ...repliesObj[id] }));
+
+        // Build HTML
+        let repliesHtml = '';
+        if (repliesList.length > 0) {
+          repliesHtml = `
+            <div class="mt-2 border-t border-slate-100 pt-3.5 space-y-2">
+              <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider block">💬 답글 목록 (${repliesList.length}개)</span>
+              <div class="space-y-1.5">
+                ${repliesList.map(rep => `
+                  <div class="px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg flex items-start justify-between gap-4 text-xs">
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-1.5 text-[9px] font-bold text-slate-700">
+                        <span>${rep.name || '익명'}</span>
+                        <span class="text-slate-400 font-light font-sans">${getCleanTime(rep.timestamp)}</span>
+                      </div>
+                      <p class="text-[11px] text-slate-600 mt-0.5 leading-relaxed break-all">${rep.text}</p>
+                    </div>
+                    <button 
+                      onclick="deleteReply('${key}', '${rep.id}')"
+                      class="px-1.5 py-0.5 text-[9px] text-rose-500 hover:text-rose-600 font-black hover:bg-rose-50 border border-transparent hover:border-rose-200 rounded-md transition-colors cursor-pointer shrink-0"
+                    >
+                      답글삭제
+                    </button>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        card.innerHTML = `
+          <!-- Postit Representation Decor -->
+          <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
+            
+            <!-- Detail content grid block -->
+            <div class="flex gap-3.5 items-start min-w-0 flex-1">
+              <!-- Mini postit colored visual chip representing styling -->
+              <div class="w-12 h-12 rounded-lg border flex items-center justify-center shrink-0 shadow-xs relative ${pBg}">
+                <div class="postit-tape-admin"></div>
+                <span class="text-xl mt-1">${letter.emoji || '✏️'}</span>
+              </div>
+              
+              <div class="min-w-0 space-y-1">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="font-extrabold text-sm text-slate-800">${letter.name || '익명'}</span>
+                  <span class="text-[10px] text-slate-400 font-sans">${getCleanTime(letter.timestamp)}</span>
+                  <span class="text-[9px] bg-rose-50 border border-rose-200 text-rose-600 font-bold px-1.5 py-0.2 rounded-full">❤️ ${letter.likes || 0}</span>
+                  ${!visible ? '<span class="text-[9px] bg-slate-200 text-slate-600 font-bold px-1.5 py-0.2 rounded-full shrink-0">숨김 상태</span>' : ''}
+                </div>
+                <p class="text-xs text-slate-600 font-medium leading-relaxed whitespace-pre-wrap break-words">${letter.message}</p>
+              </div>
+            </div>
+
+            <!-- Action buttons block layout -->
+            <div class="flex md:flex-col gap-1.5 justify-end shrink-0 md:w-[90px] mt-2 md:mt-0 select-none text-xs">
+              <!-- Visibility Switch toggle handler -->
+              <button 
+                onclick="toggleVisibility('${key}', ${visible})"
+                class="flex-1 md:flex-none px-3 py-2 text-[11px] font-bold rounded-lg border text-center transition-all cursor-pointer ${
+                  visible 
+                    ? 'bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-700' 
+                    : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-700'
+                }"
+              >
+                ${visible ? '숨기기' : '표시하기'}
+              </button>
+              
+              <!-- Individual deletion trigger -->
+              <button 
+                onclick="deleteLetter('${key}')"
+                class="flex-1 md:flex-none px-3 py-2 text-[11px] font-bold bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-center transition-all cursor-pointer"
+              >
+                삭제하기
+              </button>
+            </div>
+          </div>
+
+          <!-- Embedded replies manager list view -->
+          ${repliesHtml}
+        `;
+
+        listContainer.appendChild(card);
+      });
+    }
+
+    // Toggle Visibility handler
+    window.toggleVisibility = async function(key, currentVisible) {
+      try {
+        await update(ref(db, `letters/${key}`), { visible: !currentVisible });
+      } catch (err) {
+        console.error(err);
+        alert("데이터 서버 갱신 도중 비지니스 예외가 일어났습니다.");
+      }
+    };
+
+    // Deletion trigger handler
+    window.deleteLetter = async function(key) {
+      if (!confirm("이 포스트잇을 삭제할까요?")) return;
+      try {
+        await remove(ref(db, `letters/${key}`));
+      } catch (err) {
+        console.error(err);
+        alert("삭제 실패");
+      }
+    };
+
+    // Sub-reply individual removal handler
+    window.deleteReply = async function(letterKey, replyKey) {
+      if (!confirm("이 답글을 삭제할까요?")) return;
+      try {
+        await remove(ref(db, `letters/${letterKey}/replies/${replyKey}`));
+      } catch (err) {
+        console.error(err);
+        alert("답글 삭제 도중 장애가 일어났습니다.");
+      }
+    };
+
+    // Whole visibility triggers
+    document.getElementById('btn-show-all').addEventListener('click', async () => {
+      if (currentLetters.length === 0) return;
+      const updates = {};
+      currentLetters.forEach(l => {
+        updates[`letters/${l.key}/visible`] = true;
+      });
+
+      try {
+        await update(ref(db), updates);
+      } catch (err) {
+        console.error(err);
+        alert("진행 실패");
+      }
+    });
+
+    // Clean invisible records in db bulk selection
+    document.getElementById('btn-delete-hidden').addEventListener('click', async () => {
+      const hiddenLetters = currentLetters.filter(l => l.visible === false);
+      if (hiddenLetters.length === 0) {
+        alert("숨겨진 설정의 포스트잇이 존재하지 않습니다.");
+        return;
+      }
+
+      if (!confirm(`정말로 숨긴 포스트잇 ${hiddenLetters.length}개를 전부 영구 삭제하시겠습니까?`)) return;
+
+      try {
+        for (const item of hiddenLetters) {
+          await remove(ref(db, `letters/${item.key}`));
+        }
+      } catch (err) {
+        console.error(err);
+        alert("삭제 도중 일부 에러가 일어났습니다.");
+      }
+    });
+
+    // Database reset wipe bulk wipe
+    document.getElementById('btn-delete-all').addEventListener('click', async () => {
+      if (currentLetters.length === 0) return;
+      if (!confirm("정말 모든 포스트잇 데이터를 철거할까요? 되돌릴 수 없어요!")) return;
+
+      try {
+        await remove(ref(db, 'letters'));
+      } catch (err) {
+        console.error(err);
+        alert("초기화 과정에 에러가 일어났습니다.");
+      }
+    });
+
+  </script>
+</body>
+</html>

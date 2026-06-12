@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>선생님께 포스트잇 붙이기 📌</title>
+  <!-- Google Fonts (Noto Sans KR) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS Play CDN -->
+  <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background-color: #f3f4f6;
+      background-image: 
+        linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    @keyframes pop {
+      0% { transform: scale(0) rotate(-10deg); }
+      75% { transform: scale(1.1) rotate(5deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+    .postit-pop {
+      animation: pop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+  </style>
+</head>
+<body class="min-h-screen relative flex items-center justify-center p-4 overflow-x-hidden selection:bg-yellow-200">
+
+  <!-- Whiteboard Aluminum Frame (Aesthetic border) -->
+  <div class="fixed inset-3 border-4 border-slate-300 rounded-2xl pointer-events-none z-0 shadow-inner"></div>
+  <div class="fixed bottom-6 right-10 bg-slate-400/20 px-4 py-1.5 rounded-full text-xs text-slate-500 font-medium z-0 hidden md:block">
+    🏫 화이트보드 게시판 v2.0
+  </div>
+
+  <!-- Write Card -->
+  <main id="card-wrap" class="relative z-10 w-full max-w-[400px] h-auto bg-white border border-slate-200 rounded-3xl shadow-xl p-6 md:p-8 transition-all duration-300">
+    
+    <!-- Quick Tab Navigation Menu -->
+    <div class="flex border-b border-slate-100 pb-4 mb-5 select-none w-full">
+      <a href="letter.html" class="flex-1 text-center py-2 text-xs font-black text-slate-800 border-b-2 border-slate-800 transition-all">
+        ✏️ 포스트잇 쓰기
+      </a>
+      <a href="index.html" class="flex-1 text-center py-2 text-xs font-bold text-slate-400 hover:text-slate-600 transition-all">
+        📺 실시간 전광판
+      </a>
+      <a href="admin.html" class="flex-1 text-center py-2 text-xs font-bold text-slate-400 hover:text-slate-600 transition-all">
+        📋 선생님 관리자
+      </a>
+    </div>
+
+    <!-- Write Form Section -->
+      <!-- Title header -->
+      <header class="text-center mb-6">
+        <div class="text-4xl mb-2">📌</div>
+        <h1 class="text-xl font-black tracking-tight text-slate-800 mb-1">선생님께 포스트잇 붙이기</h1>
+        <p class="text-xs text-slate-500 font-light">따뜻한 한마디를 적어 실시간 화이트보드에 붙여보세요!</p>
+      </header>
+
+      <!-- Form Inputs -->
+      <form id="letterForm" onsubmit="return false;" class="space-y-4">
+        <!-- Name Input -->
+        <div>
+          <label for="name" class="block text-xs font-bold text-slate-600 mb-1.5">작성인 (선택)</label>
+          <input 
+            type="text" 
+            id="name" 
+            placeholder="이름을 입력하세요 (비워두면 '익명' 처리)" 
+            maxlength="15"
+            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
+          >
+        </div>
+
+        <!-- Post-it Message -->
+        <div>
+          <label for="message" class="block text-xs font-bold text-slate-600 mb-1.5">포스트잇 내용 (필수)</label>
+          <textarea 
+            id="message" 
+            required 
+            placeholder="선생님께 전하고 싶은 예쁘고 감사의 가득한 문장을 포스트잇에 한자한자 정성스럽게 한 단어씩 담아보세요..." 
+            class="w-full min-h-[120px] px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors resize-none"
+          ></textarea>
+        </div>
+
+        <!-- Post-it Color Picker -->
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-2">포스트잇 색상 선택</label>
+          <div class="grid grid-cols-4 gap-2.5" id="color-grid">
+            <!-- Colors will be dynamically generated here -->
+          </div>
+        </div>
+
+        <!-- Emoji Selector -->
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-2">아이콘/데코 이모지 선택</label>
+          <div class="grid grid-cols-4 gap-2" id="emoji-grid">
+            <!-- Emojis will be built here -->
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button 
+          type="submit" 
+          id="submitBtn" 
+          disabled
+          class="w-full py-3.5 rounded-xl font-bold text-sm text-center shadow-md text-white bg-slate-800 hover:bg-slate-700 cursor-pointer hover:-translate-y-[1px] active:translate-y-0 disabled:opacity-30 disabled:cursor-not-allowed disabled:transform-none transition-all duration-200 mt-2"
+        >
+          📌 화이트보드에 붙이기
+        </button>
+      </form>
+    </div>
+
+    <!-- Success View -->
+    <div id="success-section" class="hidden text-center py-6">
+      <!-- Simulated visual preview of added postit -->
+      <div class="inline-block p-6 rounded-lg shadow-md mb-6 w-48 text-left rotate-[-2deg] transition-all transform hover:rotate-0" id="preview-postit">
+        <div class="flex items-center justify-between gap-1 mb-2">
+          <span class="text-[10px] font-black uppercase text-slate-700/60 max-w-[90px] truncate" id="preview-name">익명</span>
+          <span class="text-base shrink-0" id="preview-emoji">✏️</span>
+        </div>
+        <p class="text-[11px] text-slate-800 leading-relaxed font-medium line-clamp-4 break-all" id="preview-content">
+          편지가 전달되었습니다!
+        </p>
+      </div>
+
+      <h2 class="text-xl font-extrabold text-slate-800 mb-1">포스트잇이 부착되었어요!</h2>
+      <p class="text-xs text-slate-500 font-light leading-relaxed mb-6">
+        작성된 따뜻한 포스트잇 메시지가<br>교실 화이트보드 전광판에 실시간으로 배달되었습니다.
+      </p>
+      <button 
+        type="button" 
+        id="resetBtn"
+        class="w-full py-3 rounded-xl font-bold text-sm border border-slate-200 hover:bg-slate-50 text-slate-700 transition-all duration-200 cursor-pointer"
+      >
+        또 다른 포스트잇 붙이기
+      </button>
+    </div>
+
+  </main>
+
+  <!-- Firebase Setup -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    // Live Firebase Project Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjpXlCHHTI0V0kexoaDRmWVmM2PRmnNWs",
+      authDomain: "letter03-60590.firebaseapp.com",
+      databaseURL: "https://letter03-60590-default-rtdb.firebaseio.com",
+      projectId: "letter03-60590",
+      storageBucket: "letter03-60590.firebasestorage.app",
+      messagingSenderId: "762942548041",
+      appId: "1:762942548041:web:f54d6ffb5e6cd6bd3af798",
+      measurementId: "G-RGZW2XXZ93"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Color definitions corresponding to 연노랑, 연분홍, 연하늘색
+    const colorThemes = {
+      yellow: { bg: 'bg-[#fffae0]', border: 'border-yellow-300', active: 'ring-2 ring-yellow-500 ring-offset-2' },
+      pink: { bg: 'bg-[#ffeef4]', border: 'border-pink-300', active: 'ring-2 ring-pink-500 ring-offset-2' },
+      blue: { bg: 'bg-[#e0f2fe]', border: 'border-sky-300', active: 'ring-2 ring-sky-500 ring-offset-2' }
+    };
+    
+    // Choose selected color randomly from the three allowed keys on page load!
+    const colorKeys = Object.keys(colorThemes);
+    let selectedColor = colorKeys[Math.floor(Math.random() * colorKeys.length)];
+
+    // Render Color Picker Grid
+    const colorGrid = document.getElementById('color-grid');
+    Object.keys(colorThemes).forEach((colorName) => {
+      const theme = colorThemes[colorName];
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `w-full h-10 rounded-xl border ${theme.bg} ${theme.border} transition-all duration-150 cursor-pointer ${
+        colorName === selectedColor ? theme.active : 'hover:scale-105'
+      }`;
+      button.title = colorName;
+      
+      button.addEventListener('click', () => {
+        selectedColor = colorName;
+        // render focus ring updates
+        document.querySelectorAll('#color-grid button').forEach((btn) => {
+          const btnColor = btn.title;
+          const t = colorThemes[btnColor];
+          btn.className = `w-full h-10 rounded-xl border ${t.bg} ${t.border} transition-all duration-150 cursor-pointer ${
+            btnColor === selectedColor ? t.active : 'hover:scale-105'
+          }`;
+        });
+      });
+      colorGrid.appendChild(button);
+    });
+
+    // Emoji Initialization
+    const emojis = ['✏️', '📚', '🌟', '❤️', '😊', '🎓', '🌈', '🙏'];
+    let selectedEmoji = emojis[0];
+    const emojiGrid = document.getElementById('emoji-grid');
+
+    emojis.forEach((emoji, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.innerText = emoji;
+      button.className = `emoji-btn py-2 rounded-xl border text-lg flex items-center justify-center transition-all cursor-pointer ${
+        index === 0 
+          ? 'border-slate-800 bg-slate-800/10 shadow-inner font-bold' 
+          : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+      }`;
+      button.addEventListener('click', () => {
+        selectedEmoji = emoji;
+        document.querySelectorAll('.emoji-btn').forEach(btn => {
+          btn.className = 'emoji-btn py-2 rounded-xl border text-lg flex items-center justify-center border-slate-200 bg-slate-50 hover:bg-slate-100 transition-all cursor-pointer';
+        });
+        button.className = 'emoji-btn py-2 rounded-xl border text-lg flex items-center justify-center border-slate-800 bg-slate-800/10 shadow-inner font-bold transition-all cursor-pointer';
+      });
+      emojiGrid.appendChild(button);
+    });
+
+    // Form Interactions
+    const formSection = document.getElementById('form-section');
+    const successSection = document.getElementById('success-section');
+    const nameInput = document.getElementById('name');
+    const messageInput = document.getElementById('message');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // Success preview items
+    const previewPostit = document.getElementById('preview-postit');
+    const previewName = document.getElementById('preview-name');
+    const previewEmoji = document.getElementById('preview-emoji');
+    const previewContent = document.getElementById('preview-content');
+    const resetBtn = document.getElementById('resetBtn');
+
+    messageInput.addEventListener('input', () => {
+      submitBtn.disabled = !messageInput.value.trim();
+    });
+
+    // Post submit handler
+    submitBtn.addEventListener('click', async () => {
+      const message = messageInput.value.trim();
+      if (!message) return;
+
+      const name = nameInput.value.trim() || '익명';
+
+      // Set state to loading
+      submitBtn.disabled = true;
+      submitBtn.innerText = "부착하는 중...";
+
+      try {
+        await push(ref(db, 'letters'), {
+          name: name,
+          message: message,
+          emoji: selectedEmoji,
+          color: selectedColor,  // Saved newly introduced postit color theme!
+          timestamp: serverTimestamp(),
+          visible: true,
+          likes: 0,
+          replies: {}
+        });
+
+        // Configure Success Preview
+        previewName.innerText = name;
+        previewEmoji.innerText = selectedEmoji;
+        previewContent.innerText = message;
+        
+        // Remove existing theme classes from preview postit and inject current values
+        previewPostit.className = `inline-block p-6 rounded-lg shadow-md mb-6 w-48 text-left rotate-[-2deg] transition-all transform hover:rotate-0 postit-pop ${
+          selectedColor === 'yellow' ? 'bg-[#fffae0] border border-yellow-300 text-slate-800' :
+          selectedColor === 'pink' ? 'bg-[#ffeef4] border border-pink-300 text-slate-800' :
+          'bg-[#e0f2fe] border border-sky-300 text-slate-800'
+        }`;
+
+        formSection.classList.add('hidden');
+        successSection.classList.remove('hidden');
+      } catch (err) {
+        console.error(err);
+        alert("전송 실패했어요. 다시 시도해주세요.");
+        submitBtn.disabled = false;
+        submitBtn.innerText = "📌 화이트보드에 붙이기";
+      }
+    });
+
+    // Reset Form to initial slate
+    resetBtn.addEventListener('click', () => {
+      nameInput.value = '';
+      messageInput.value = '';
+      submitBtn.disabled = true;
+      submitBtn.innerText = "📌 화이트보드에 붙이기";
+      
+      // Default emoji ✏️
+      selectedEmoji = emojis[0];
+      document.querySelectorAll('.emoji-btn').forEach((btn, index) => {
+        if (index === 0) {
+          btn.className = 'emoji-btn py-2 rounded-xl border text-lg flex items-center justify-center border-slate-800 bg-slate-800/10 shadow-inner font-bold transition-all cursor-pointer';
+        } else {
+          btn.className = 'emoji-btn py-2 rounded-xl border text-lg flex items-center justify-center border-slate-200 bg-slate-50 hover:bg-slate-100 transition-all cursor-pointer';
+        }
+      });
+
+      // Reset to a random color among our customized themes
+      const colorKeysReset = Object.keys(colorThemes);
+      selectedColor = colorKeysReset[Math.floor(Math.random() * colorKeysReset.length)];
+      document.querySelectorAll('#color-grid button').forEach((btn) => {
+        const btnColor = btn.title;
+        const t = colorThemes[btnColor];
+        btn.className = `w-full h-10 rounded-xl border ${t.bg} ${t.border} transition-all duration-150 cursor-pointer ${
+          btnColor === selectedColor ? t.active : 'hover:scale-105'
+        }`;
+      });
+
+      successSection.classList.add('hidden');
+      formSection.classList.remove('hidden');
+    });
+
+  </script>
+</body>
+</html>

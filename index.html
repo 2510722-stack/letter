@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>우리 교실 포스트잇 화이트보드 📺</title>
+  <!-- Google Fonts (Noto Sans KR) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS Play CDN -->
+  <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+  <!-- QRCode.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background-color: #f1f5f9;
+      background-image: 
+        linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+    canvas {
+      pointer-events: none;
+    }
+    /* Hide scrollbar for layout elements */
+    .scrollbar-none::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-none {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    
+    /* Hover floating animations */
+    @keyframes floating {
+      0%, 100% { transform: translateY(0) rotate(var(--rot, 0deg)); }
+      50% { transform: translateY(-8px) rotate(calc(var(--rot, 0deg) + 1.5deg)); }
+    }
+    .card-float {
+      animation: floating 3.5s ease-in-out infinite;
+    }
+
+    /* Entrance bounce animation for cards */
+    @keyframes cardDropWobble {
+      0% {
+        transform: translateY(-400px) rotate(calc(var(--rot, 0deg) - 22deg)) scaleY(1.4) scaleX(0.7);
+        opacity: 0;
+      }
+      40% {
+        transform: translateY(0) rotate(var(--rot, 0deg)) scaleY(0.72) scaleX(1.28);
+        opacity: 1;
+      }
+      58% {
+        transform: translateY(-35px) rotate(calc(var(--rot, 0deg) + 7deg)) scaleY(1.12) scaleX(0.88);
+      }
+      73% {
+        transform: translateY(0) rotate(calc(var(--rot, 0deg) - 4deg)) scaleY(0.92) scaleX(1.08);
+      }
+      87% {
+        transform: translateY(-10px) rotate(calc(var(--rot, 0deg) + 2deg)) scaleY(1.03) scaleX(0.97);
+      }
+      100% {
+        transform: translateY(0) rotate(var(--rot, 0deg)) scale(1);
+        opacity: 1;
+      }
+    }
+    .card-in {
+      animation: cardDropWobble 0.95s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+      transform-origin: center top;
+    }
+
+    /* Wind Flutter/Gust Animation (Temporarily overrules general float animation) */
+    @keyframes windFlutter {
+      0%, 100% {
+        transform: translateY(0) rotate(var(--rot, 0deg)) scale(1);
+      }
+      15% {
+        transform: translateY(-10px) translateX(15px) rotate(calc(var(--rot, 0deg) + 12deg)) skewX(-8deg) scaleY(0.92);
+      }
+      30% {
+        transform: translateY(6px) translateX(-5px) rotate(calc(var(--rot, 0deg) - 7deg)) skewX(4deg);
+      }
+      45% {
+        transform: translateY(-12px) translateX(20px) rotate(calc(var(--rot, 0deg) + 14deg)) skewX(-9deg) scale(1.03);
+      }
+      60% {
+        transform: translateY(3px) translateX(3px) rotate(calc(var(--rot, 0deg) - 4deg)) skewX(3deg);
+      }
+      75% {
+        transform: translateY(-5px) translateX(8px) rotate(calc(var(--rot, 0deg) + 6deg)) skewX(-4deg);
+      }
+      88% {
+        transform: translateY(0) translateX(2px) rotate(calc(var(--rot, 0deg) - 1.5deg));
+      }
+    }
+    .wind-flutter {
+      animation: windFlutter 2.8s cubic-bezier(0.25, 1, 0.5, 1) !important;
+    }
+
+    /* Wind Breeze Sweeping Visual Line Overlay */
+    #wind-breeze {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      width: 280px;
+      background: linear-gradient(90deg, rgba(235, 246, 255, 0) 0%, rgba(224, 242, 254, 0.38) 50%, rgba(235, 246, 255, 0) 100%);
+      pointer-events: none;
+      z-index: 15;
+      filter: blur(12px);
+      left: -400px;
+      transform: skewX(-20deg);
+      opacity: 0;
+    }
+
+    /* Sidebar slide-in animation */
+    @keyframes fadeSlideIn {
+      from { transform: translateY(8px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .animate-fadeslidein {
+      animation: fadeSlideIn 0.4s ease-out forwards;
+    }
+
+    /* Tape simulation on postit cards */
+    .postit-tape {
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%) rotate(-2deg);
+      width: 50px;
+      height: 16px;
+      background-color: rgba(254, 240, 138, 0.5); /* Semi-transparent yellow tape */
+      backdrop-filter: blur(1px);
+      border-left: 1px dashed rgba(0,0,0,0.1);
+      border-right: 1px dashed rgba(0,0,0,0.1);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+  </style>
+</head>
+<body class="min-h-screen overflow-hidden relative selection:bg-yellow-200">
+
+  <!-- Aluminum Metal Frame Design of Whiteboard -->
+  <div class="fixed inset-2 border-8 border-slate-300 rounded-3xl pointer-events-none z-30 shadow-[inset_0_2px_10px_rgba(0,0,0,0.1),_0_10px_35px_rgba(0,0,0,0.15)]"></div>
+
+  <!-- Fixed Canvas Starfield (Silver/Blue twinkling glitter on whiteboard) -->
+  <canvas id="starfield" class="fixed inset-0 z-0"></canvas>
+
+  <!-- Wind Breeze Sweeping Visual Line Overlay -->
+  <div id="wind-breeze"></div>
+
+  <!-- Main Grid Wrapper -->
+  <div class="flex h-screen w-screen relative z-10 select-none p-4">
+    
+    <!-- Left Sidebar Panel -->
+    <aside class="w-[220px] h-full flex flex-col bg-white/70 border-r border-slate-200/80 relative z-20 shrink-0 select-none backdrop-blur-md rounded-l-2xl my-2 ml-2 overflow-hidden shadow-sm">
+      <div class="p-4 border-b border-slate-200/80 flex items-center gap-2 bg-slate-50/50">
+        <span class="text-xl">💌</span>
+        <h2 class="font-extrabold text-sm tracking-tight text-slate-800">오늘의 포스트잇</h2>
+      </div>
+      <div id="side-list" class="flex-1 overflow-y-auto p-3 space-y-3.5 scrollbar-none">
+        <!-- Sidebar items populated dynamically -->
+      </div>
+      
+      <!-- Interactive Sidebar Navigation Menu -->
+      <div class="p-3 border-t border-slate-200/80 bg-slate-50/50 space-y-1.5 shrink-0 z-30">
+        <div class="text-[9px] font-black uppercase text-slate-400 tracking-wider px-1">화면 바로가기</div>
+        <a href="index.html" class="flex items-center gap-2 w-full px-2.5 py-2 rounded-xl text-xs font-black bg-slate-800 text-white shadow-sm pointer-events-auto transition-all transform hover:scale-[1.02] active:scale-95">
+          <span>📺</span> 실시간 전광판
+        </a>
+        <a href="letter.html" class="flex items-center gap-2 w-full px-2.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-100/80 pointer-events-auto transition-all transform hover:scale-[1.02] active:scale-95 border border-slate-200/40">
+          <span>✏️</span> 포스트잇 보내기
+        </a>
+        <a href="admin.html" class="flex items-center gap-2 w-full px-2.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-100/80 pointer-events-auto transition-all transform hover:scale-[1.02] active:scale-95 border border-slate-200/40">
+          <span>📋</span> 선생님 관리자
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Card Stage Area (Whiteboard board surface) -->
+    <main id="main-board" class="flex-1 h-full relative overflow-hidden pointer-events-none select-none my-2 mr-2 rounded-r-2xl bg-white/35 backdrop-blur-[2px]">
+      <!-- Dynamically spawned floating cards appear here -->
+    </main>
+  </div>
+
+  <!-- QR Code overlay box (fixed top right) -->
+  <div class="fixed right-6 top-6 bg-white p-3 rounded-2xl shadow-[0_12px_32px_rgba(0,0,0,0.12)] z-40 flex flex-col items-center border border-slate-100 select-none">
+    <div id="qrcode" class="p-1 bg-white rounded-lg"></div>
+    <div class="text-[11px] font-black text-slate-800 mt-2 flex items-center gap-1">포스트잇 붙이기 <span class="text-xs">✏️</span></div>
+  </div>
+
+  <!-- Realtime Alert Notification Bar (Fixed bottom middle) -->
+  <div id="alert-bar" class="fixed bottom-7 left-[260px] right-[160px] bg-slate-800/95 border border-slate-700/50 text-white rounded-2xl py-3.5 px-6 shadow-[0_10px_35px_rgba(0,0,0,0.2)] text-sm font-medium z-40 backdrop-blur-md transition-all duration-300 transform translate-y-3 opacity-0 select-none" style="display: none;">
+    <div class="flex items-center gap-2.5">
+      <span class="text-lg animate-bounce">📌</span>
+      <div>새 포스트잇이 칠판에 붙었습니다! &mdash; <span id="alert-name" class="font-bold text-amber-300"></span></div>
+    </div>
+  </div>
+
+  <!-- Total Cards Count Badge (Fixed bottom right) -->
+  <div id="total-badge" class="fixed right-6 bottom-7 bg-white px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-black text-slate-700 z-40 shadow-sm select-none">
+    총 포스트잇 0개
+  </div>
+
+  <!-- Floating Delivery Envelope Container -->
+  <div id="envelope-container" style="position: fixed; left: -120px; top: 50%; transform: translateY(-50%) rotate(0deg); opacity: 0; pointer-events: none; z-index: 100;">
+    <svg id="envelope-svg" width="80" height="62" viewBox="0 0 80 62" style="filter: drop-shadow(0px 8px 16px rgba(0,0,0,0.15));">
+      <!-- Wings -->
+      <ellipse id="wl" cx="20" cy="31" rx="15" ry="8" fill="#cbd5e1" opacity="0.8" />
+      <ellipse id="wr" cx="60" cy="31" rx="15" ry="8" fill="#cbd5e1" opacity="0.8" />
+      <!-- Post-it Styled Body shape representing mini-flyer -->
+      <rect x="23" y="16" width="34" height="30" rx="3" fill="#fef08a" stroke="#facc15" stroke-width="1.5"/>
+      <line x1="28" y1="24" x2="48" y2="24" stroke="#eab308" stroke-width="2" stroke-linecap="round"/>
+      <line x1="28" y1="30" x2="52" y2="30" stroke="#eab308" stroke-width="2" stroke-linecap="round"/>
+      <line x1="28" y1="36" x2="40" y2="36" stroke="#eab308" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+  </div>
+
+  <!-- ZOOM-IN INTERACTIVE MODAL (For likes and replies) -->
+  <div id="zoom-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden transition-opacity duration-300 opacity-0">
+    <div class="bg-white rounded-3xl w-full max-w-[440px] shadow-2xl border border-slate-100 overflow-hidden relative flex flex-col max-h-[85vh] transition-transform duration-300 transform scale-95" id="modal-box">
+      <!-- Modal Header Close button -->
+      <button onclick="closePostitModal()" class="absolute right-4 top-4 text-slate-400 hover:text-slate-600 font-bold text-lg p-1.5 hover:bg-slate-100 rounded-full transition-colors cursor-pointer z-10">&times;</button>
+      
+      <!-- Modal Scrollable Content -->
+      <div class="p-6 md:p-8 overflow-y-auto space-y-6 scrollbar-none flex-1">
+        
+        <!-- Post-it Representation Inside Zoom Modal -->
+        <div id="modal-postit" class="p-6 rounded-2xl relative shadow-md transform rotate-[-1deg] border">
+          <!-- Tape representation on top -->
+          <div class="postit-tape"></div>
+          
+          <div class="flex items-center justify-between gap-1 mb-3 mt-1">
+            <span id="modal-name" class="text-xs bg-slate-800/10 px-2.5 py-0.5 rounded-full font-bold truncate max-w-[180px] text-slate-800">이름</span>
+            <span id="modal-emoji" class="text-2xl shrink-0">📌</span>
+          </div>
+          <p id="modal-message" class="text-sm font-medium leading-relaxed text-slate-800 whitespace-pre-wrap break-words min-h-[50px]">
+            메시지 내용입니다.
+          </p>
+          <div class="text-[10px] text-slate-500/85 mt-4 text-right" id="modal-time"></div>
+        </div>
+
+        <!-- Likes Heart Action Box -->
+        <div class="flex items-center justify-between px-1 border-b border-slate-100 pb-4">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-semibold text-slate-600">선생님과 친구들이 좋아해요</span>
+          </div>
+          <button id="modal-like-btn" class="flex items-center gap-1.5 px-4 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl text-rose-600 text-xs font-bold transition-all cursor-pointer transform hover:scale-105 active:scale-95">
+            ❤️ <span id="modal-like-count">0</span>
+          </button>
+        </div>
+
+        <!-- Replies Section list -->
+        <div class="space-y-4">
+          <h3 class="text-xs font-black text-slate-700 tracking-wider flex items-center gap-1.5">
+            💬 따뜻한 답글 목록 <span class="text-[10px] text-slate-400 font-normal" id="modal-reply-count">0개</span>
+          </h3>
+          
+          <!-- Scrollable bubbles -->
+          <div id="modal-replies-list" class="space-y-2.5 max-h-[160px] overflow-y-auto pr-1">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Reply Write Input bottom footer -->
+      <div class="p-4 bg-slate-50 border-t border-slate-100 shrink-0">
+        <form id="reply-form" onsubmit="return false;" class="flex gap-2 items-center">
+          <input 
+            type="text" 
+            id="reply-name" 
+            placeholder="이름 (닉네임)" 
+            maxlength="10"
+            class="w-24 px-2.5 py-2 text-xs bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 text-slate-800 focus:outline-none focus:border-amber-500 font-medium shrink-0"
+          >
+          <input 
+            type="text" 
+            id="reply-input" 
+            placeholder="답글을 남겨 칠판을 따뜻하게 해주세요..." 
+            required
+            class="flex-1 px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl placeholder:text-slate-400 text-slate-800 focus:outline-none focus:border-amber-500 font-light"
+          >
+          <button 
+            type="submit" 
+            id="reply-submit-btn"
+            class="px-3.5 py-2 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-white rounded-xl shadow-sm transition-colors cursor-pointer shrink-0"
+          >
+            등록
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Firebase Integration script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, onValue, query, orderByChild, update, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    // Live Firebase Project Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjpXlCHHTI0V0kexoaDRmWVmM2PRmnNWs",
+      authDomain: "letter03-60590.firebaseapp.com",
+      databaseURL: "https://letter03-60590-default-rtdb.firebaseio.com",
+      projectId: "letter03-60590",
+      storageBucket: "letter03-60590.firebasestorage.app",
+      messagingSenderId: "762942548041",
+      appId: "1:762942548041:web:f54d6ffb5e6cd6bd3af798",
+      measurementId: "G-RGZW2XXZ93"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Dynamic Starfield (Glittering elegant dust star layer of Whiteboard background)
+    const canvas = document.getElementById('starfield');
+    const ctx = canvas.getContext('2d');
+    let stars = [];
+    let bigStars = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      initStars();
+    }
+
+    function initStars() {
+      stars = [];
+      bigStars = [];
+      // 150 soft lavender indigo stars
+      for (let i = 0; i < 150; i++) {
+        stars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          size: Math.random() * 1.5 + 0.4,
+          phase: Math.random() * Math.PI * 2,
+          speed: Math.random() * 0.02 + 0.008
+        });
+      }
+      // 12 soft golden flare stars
+      for (let i = 0; i < 12; i++) {
+        bigStars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          size: Math.random() * 1.5 + 2.5,
+          phase: Math.random() * Math.PI * 2,
+          speed: Math.random() * 0.012 + 0.005
+        });
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw pastel star particles
+      stars.forEach(s => {
+        s.phase += s.speed;
+        const alpha = (Math.sin(s.phase) + 1) / 2 * 0.35 + 0.05; // lower alpha so it's comfortable on whiteboard
+        ctx.fillStyle = `rgba(99, 102, 241, ${alpha})`; // Indigo shade
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Draw shiny golden flares on whiteboard
+      bigStars.forEach(s => {
+        s.phase += s.speed;
+        const alpha = (Math.sin(s.phase) + 1) / 2 * 0.3 + 0.05;
+        
+        ctx.strokeStyle = `rgba(245, 158, 11, ${alpha * 0.4})`; // Orange Amber flare
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(s.x - 6, s.y);
+        ctx.lineTo(s.x + 6, s.y);
+        ctx.moveTo(s.x, s.y - 6);
+        ctx.lineTo(s.x, s.y + 6);
+        ctx.stroke();
+
+        ctx.fillStyle = `rgba(245, 158, 11, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    draw();
+
+    // QR Code rendering
+    const baseWriteUrl = window.location.href.split('?')[0].split('#')[0].replace('index.html', '') + 'letter.html';
+    document.getElementById('qrcode').innerHTML = '';
+    new QRCode(document.getElementById("qrcode"), {
+      text: baseWriteUrl,
+      width: 120,
+      height: 120,
+      colorDark: "#1e293b",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.M
+    });
+
+    // Notify Alert handler
+    let alertTimeout = null;
+    let alertHideTimeout = null;
+
+    function showNotify(name) {
+      const alertBar = document.getElementById('alert-bar');
+      const alertName = document.getElementById('alert-name');
+      
+      alertName.innerText = name;
+      
+      if (alertTimeout) clearTimeout(alertTimeout);
+      if (alertHideTimeout) clearTimeout(alertHideTimeout);
+
+      alertBar.style.display = 'block';
+      setTimeout(() => {
+        alertBar.style.opacity = '1';
+        alertBar.style.transform = 'translateY(0)';
+      }, 50);
+
+      alertTimeout = setTimeout(() => {
+        alertBar.style.opacity = '0';
+        alertBar.style.transform = 'translateY(12px)';
+        alertHideTimeout = setTimeout(() => {
+          alertBar.style.display = 'none';
+        }, 400);
+      }, 2800);
+    }
+
+    // Wing flapping fly Envelope steps
+    function flyEnvelope(onLandCallback) {
+      const container = document.getElementById('envelope-container');
+      const wl = document.getElementById('wl');
+      const wr = document.getElementById('wr');
+      
+      container.style.transition = 'none';
+      container.style.left = '-120px';
+      container.style.top = `${Math.random() * 40 + 30}%`;
+      container.style.opacity = '0';
+      container.style.transform = 'translateY(-50%) rotate(0deg) scale(1)';
+      container.style.display = 'block';
+
+      let angle = 0;
+      let wingDir = 1;
+      let wingAnimId;
+
+      function animateWings() {
+        angle += wingDir * 4.5;
+        if (angle > 42) { wingDir = -1; angle = 42; }
+        if (angle < -10) { wingDir = 1; angle = -10; }
+        wl.setAttribute('transform', `rotate(${angle}, 20, 31)`);
+        wr.setAttribute('transform', `rotate(${-angle}, 60, 31)`);
+        wingAnimId = requestAnimationFrame(animateWings);
+      }
+      animateWings();
+
+      setTimeout(() => {
+        container.style.transition = 'left 0.7s cubic-bezier(.22,.61,.36,1), opacity 0.7s, transform 0.7s';
+        container.style.opacity = '1';
+        container.style.left = '20%';
+        container.style.transform = 'translateY(-50%) rotate(4deg) scale(1.05)';
+      }, 80);
+
+      setTimeout(() => {
+        container.style.transition = 'left 0.6s ease-out, transform 0.6s';
+        container.style.left = '40%';
+        container.style.transform = 'translateY(-50%) rotate(-2deg) scale(1)';
+      }, 800);
+
+      setTimeout(() => {
+        container.style.transition = 'left 0.5s ease-in, opacity 0.5s, transform 0.5s';
+        container.style.left = '48%';
+        container.style.opacity = '0';
+        container.style.transform = 'translateY(-50%) rotate(-2deg) scale(0.8)';
+      }, 1400);
+
+      setTimeout(() => {
+        cancelAnimationFrame(wingAnimId);
+        container.style.display = 'none';
+        if (onLandCallback) onLandCallback();
+      }, 1900);
+    }
+
+    // Interactive Zoom Modal State Management
+    let activeKey = null;
+    let allLettersCache = {};
+
+    window.openPostitModal = function(key) {
+      const entry = allLettersCache[key];
+      if (!entry) return;
+
+      activeKey = key;
+      const modal = document.getElementById('zoom-modal');
+      const box = document.getElementById('modal-box');
+      
+      // Update data bindings
+      updateActiveModal(entry);
+
+      // Animation pop zoom in
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        box.classList.remove('scale-95');
+      }, 50);
+    };
+
+    window.closePostitModal = function() {
+      const modal = document.getElementById('zoom-modal');
+      const box = document.getElementById('modal-box');
+      
+      modal.classList.add('opacity-0');
+      box.classList.add('scale-95');
+      
+      setTimeout(() => {
+        modal.classList.add('hidden');
+        activeKey = null;
+        
+        // Reset inputs
+        document.getElementById('reply-name').value = '';
+        document.getElementById('reply-input').value = '';
+      }, 300);
+    };
+
+    // Global click handlers to close modal on background touch
+    document.getElementById('zoom-modal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('zoom-modal')) {
+        closePostitModal();
+      }
+    });
+
+    // Method to format timestamps nicely
+    function getCleanTime(stamp) {
+      if (!stamp) return "";
+      const date = new Date(stamp);
+      return `${date.getMonth() + 1}월 ${date.getDate()}일 ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    }
+
+    // Modal realtime bindings updates
+    function updateActiveModal(entry) {
+      const pColor = entry.color || 'yellow';
+      const mPostit = document.getElementById('modal-postit');
+
+      // Update color representation classes (Allows only yellow, pink, and sky blue)
+      const allowedColors = ['yellow', 'pink', 'blue'];
+      const finalColor = allowedColors.includes(pColor) ? pColor : allowedColors[Math.floor(Math.random() * allowedColors.length)];
+      mPostit.className = `p-6 rounded-2xl relative shadow-md transform rotate-[-0.5deg] border ${
+        finalColor === 'yellow' ? 'bg-[#fffae0] border-yellow-300 text-slate-800' :
+        finalColor === 'pink' ? 'bg-[#ffeef4] border-pink-300 text-slate-800' :
+        'bg-[#e0f2fe] border-sky-300 text-slate-800'
+      }`;
+
+      document.getElementById('modal-name').innerText = entry.name || '익명';
+      document.getElementById('modal-emoji').innerText = entry.emoji || '📌';
+      document.getElementById('modal-message').innerText = entry.message;
+      document.getElementById('modal-time').innerText = getCleanTime(entry.timestamp);
+
+      // Likes count
+      const likesCount = entry.likes || 0;
+      document.getElementById('modal-like-count').innerText = likesCount;
+
+      // Replies count parsing
+      const repliesObj = entry.replies || {};
+      const repliesList = Object.keys(repliesObj).map(id => ({ id, ...repliesObj[id] }));
+      
+      document.getElementById('modal-reply-count').innerText = `${repliesList.length}개`;
+
+      // Render reply bubbles
+      const repliesContainer = document.getElementById('modal-replies-list');
+      repliesContainer.innerHTML = '';
+      if (repliesList.length === 0) {
+        repliesContainer.innerHTML = `
+          <div class="text-center py-6 text-[11px] text-slate-400 font-light">
+            아직 달린 답글이 없습니다. 첫 답글을 남겨주세요! 😊
+          </div>
+        `;
+      } else {
+        // Sort replies ascending by timestamp
+        repliesList.sort((a,b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+        repliesList.forEach(reply => {
+          const item = document.createElement('div');
+          item.className = 'p-3 bg-slate-50 border border-slate-100 rounded-2-xl flex flex-col gap-1 transition-all';
+          item.innerHTML = `
+            <div class="flex items-center justify-between text-[10px]">
+              <span class="font-bold text-slate-700">${reply.name || '익명'}</span>
+              <span class="text-slate-400 font-light">${getCleanTime(reply.timestamp)}</span>
+            </div>
+            <p class="text-[11px] text-slate-600 font-light leading-relaxed break-words">${reply.text}</p>
+          `;
+          repliesContainer.appendChild(item);
+        });
+        
+        // Auto-scroll replies wrapper to bottom to show new arrivals
+        setTimeout(() => {
+          repliesContainer.scrollTop = repliesContainer.scrollHeight;
+        }, 50);
+      }
+    }
+
+    // Submit Reply Logic
+    document.getElementById('reply-form').addEventListener('submit', async () => {
+      if (!activeKey) return;
+      const textInput = document.getElementById('reply-input');
+      const nameInput = document.getElementById('reply-name');
+      const submitBtn = document.getElementById('reply-submit-btn');
+
+      const text = textInput.value.trim();
+      if (!text) return;
+
+      const rName = nameInput.value.trim() || '익명';
+
+      submitBtn.disabled = true;
+
+      try {
+        await push(ref(db, `letters/${activeKey}/replies`), {
+          name: rName,
+          text: text,
+          timestamp: serverTimestamp()
+        });
+
+        textInput.value = '';
+        nameInput.value = '';
+      } catch (err) {
+        console.error(err);
+        alert("답글 등록에 실패했습니다.");
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    // Update Likes Click Logic
+    document.getElementById('modal-like-btn').addEventListener('click', async () => {
+      if (!activeKey) return;
+      const currentEntry = allLettersCache[activeKey];
+      if (!currentEntry) return;
+
+      const currentLikes = currentEntry.likes || 0;
+      try {
+        await update(ref(db, `letters/${activeKey}`), {
+          likes: currentLikes + 1
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    // Adding Postit Card floating on board
+    function addCard(entry, index) {
+      const mainBoard = document.getElementById('main-board');
+      const wrapper = document.createElement('div');
+      wrapper.id = `card-${entry.key}`;
+      wrapper.className = 'letter-card absolute transition-all duration-500';
+      
+      // Calculate layout coordinates
+      const maxLeft = 70;
+      const minLeft = 5;
+      const maxTop = 75;
+      const minTop = 10;
+      const leftCoord = Math.random() * (maxLeft - minLeft) + minLeft;
+      const topCoord = Math.random() * (maxTop - minTop) + minTop;
+      wrapper.style.left = `${leftCoord}%`;
+      wrapper.style.top = `${topCoord}%`;
+
+      // Assign rotation styling as inline css variable
+      const randomRot = (Math.random() * 6 - 3).toFixed(1); // -3deg ~ 3deg
+      wrapper.style.setProperty('--rot', `${randomRot}deg`);
+
+      // Color parsing - yellow (연노랑), pink (연분홍), blue (연하늘)
+      const allowedColors = ['yellow', 'pink', 'blue'];
+      const pColor = allowedColors.includes(entry.color) ? entry.color : allowedColors[Math.floor(Math.random() * allowedColors.length)];
+      let pClasses = '';
+      if (pColor === 'yellow') {
+        pClasses = 'bg-[#fffae0] border-yellow-300 shadow-[0_4px_16px_rgba(234,179,8,0.15)]';
+      } else if (pColor === 'pink') {
+        pClasses = 'bg-[#ffeef4] border-pink-300 shadow-[0_4px_16px_rgba(244,114,182,0.15)]';
+      } else { // blue - 연하늘색
+        pClasses = 'bg-[#e0f2fe] border-sky-300 shadow-[0_4px_16px_rgba(14,165,233,0.15)]';
+      }
+
+      const floatDiv = document.createElement('div');
+      floatDiv.className = 'card-float';
+      floatDiv.style.animationDelay = `${Math.random() * -3.5}s`;
+
+      const likesCount = entry.likes || 0;
+      const repliesObj = entry.replies || {};
+      const repliesCount = Object.keys(repliesObj).length;
+
+      floatDiv.innerHTML = `
+        <div 
+          onclick="openPostitModal('${entry.key}')"
+          class="card-in ${pClasses} border text-slate-800 p-4 w-[180px] rounded-[14px] flex flex-col gap-2 relative pointer-events-auto cursor-pointer select-none transition-all duration-200 transform hover:scale-105 hover:-translate-y-1 active:scale-95"
+        >
+          <!-- Tape simulated strip -->
+          <div class="postit-tape"></div>
+
+          <!-- Postit Card Details inside -->
+          <div class="flex items-center justify-between gap-1 mt-1">
+            <span class="text-[10px] bg-slate-800/5 px-2 py-0.5 rounded-full font-black max-w-[95px] truncate text-slate-700">${entry.name}</span>
+            <span class="text-base shrink-0">${entry.emoji || '✏️'}</span>
+          </div>
+          
+          <p class="text-xs font-semibold leading-relaxed break-words whitespace-pre-wrap shrink-0 mt-0.5 max-h-[85px] overflow-hidden line-clamp-4 text-slate-800/90">${entry.message}</p>
+          
+          <!-- Bottom metrics action view feedback -->
+          <div class="flex items-center gap-2 text-[9px] text-slate-500/80 font-bold border-t border-slate-900/5 pt-1.5 mt-1 shrink-0">
+            <span class="flex items-center gap-0.5">❤️ ${likesCount}</span>
+            <span class="flex items-center gap-0.5">💬 ${repliesCount}</span>
+          </div>
+        </div>
+      `;
+
+      wrapper.appendChild(floatDiv);
+      mainBoard.appendChild(wrapper);
+
+      // Card capacity max limit checking (Max 15 cards)
+      const currentCards = document.querySelectorAll('.letter-card');
+      if (currentCards.length > 15) {
+        const oldestCard = currentCards[0];
+        oldestCard.style.opacity = '0';
+        oldestCard.style.transform = 'scale(0.85)';
+        setTimeout(() => oldestCard.remove(), 500);
+      }
+
+      // Live duration configuration of exactly 20000ms for more postit discussion readability, or 10000ms as per exact requests
+      setTimeout(() => {
+        // If modal is active on this card, wait and don't destruct
+        if (activeKey === entry.key) {
+           const selfDestructWatcher = setInterval(() => {
+             if (activeKey !== entry.key) {
+               clearInterval(selfDestructWatcher);
+               wrapper.style.transition = 'opacity 0.5s, transform 0.5s';
+               wrapper.style.opacity = '0';
+               wrapper.style.transform = 'scale(0.85)';
+               setTimeout(() => wrapper.remove(), 500);
+             }
+           }, 2000);
+           return;
+        }
+
+        wrapper.style.transition = 'opacity 0.5s, transform 0.5s';
+        wrapper.style.opacity = '0';
+        wrapper.style.transform = 'scale(0.85)';
+        setTimeout(() => {
+          wrapper.remove();
+        }, 500);
+      }, 10000);
+    }
+
+    // Sidebar rendering logic
+    function updateSidebar(visibleEntries) {
+      const sideList = document.getElementById('side-list');
+      sideList.innerHTML = '';
+      
+      const latestEntries = [...visibleEntries].reverse().slice(0, 8);
+      latestEntries.forEach(entry => {
+        const item = document.createElement('div');
+        item.onclick = () => { openPostitModal(entry.key); };
+        item.className = 'p-3 bg-white/80 border border-slate-200/60 rounded-xl flex gap-2.5 items-start transition-all hover:bg-slate-50 hover:border-slate-300 cursor-pointer animate-fadeslidein shadow-sm pointer-events-auto';
+        item.innerHTML = `
+          <span class="text-base shrink-0 mt-0.5">${entry.emoji || '✏️'}</span>
+          <div class="overflow-hidden min-w-0 flex-1">
+            <h4 class="text-xs font-black text-slate-800 truncate">${entry.name}</h4>
+            <p class="text-[10px] text-slate-500 font-light mt-0.5 leading-snug line-clamp-2 break-all">${entry.message}</p>
+          </div>
+        `;
+        sideList.appendChild(item);
+      });
+    }
+
+    // Fetch Firebase realtime updates
+    const lettersQuery = query(ref(db, 'letters'), orderByChild('timestamp'));
+    let prevKeys = new Set();
+    let cardIndex = 0;
+
+    onValue(lettersQuery, (snapshot) => {
+      const data = snapshot.val();
+      const entries = [];
+      if (data) {
+        Object.keys(data).forEach(key => {
+          entries.push({ key, ...data[key] });
+        });
+      }
+
+      allLettersCache = {};
+      entries.forEach(e => {
+        allLettersCache[e.key] = e;
+      });
+
+      const visibleEntries = entries.filter(e => e.visible !== false);
+
+      // Dynamic real-time update of currently opened modal detail bindings!
+      if (activeKey && allLettersCache[activeKey]) {
+        updateActiveModal(allLettersCache[activeKey]);
+      } else if (activeKey && !allLettersCache[activeKey]) {
+        // If modal was active but deleted
+        closePostitModal();
+      }
+
+      // Update badge total
+      document.getElementById('total-badge').innerText = `총 포스트잇 ${visibleEntries.length}개`;
+
+      // Update sidebar list items
+      updateSidebar(visibleEntries);
+
+      // Check arrival additions
+      if (prevKeys.size === 0) {
+        // Init load: spawn 3 cards
+        const initialShow = visibleEntries.slice(-3);
+        initialShow.forEach(entry => {
+          addCard(entry, cardIndex++);
+        });
+        
+        entries.forEach(e => prevKeys.add(e.key));
+      } else {
+        // Realtime notifications routing fly simulation
+        visibleEntries.forEach(entry => {
+          if (!prevKeys.has(entry.key)) {
+            prevKeys.add(entry.key);
+            flyEnvelope(() => {
+              addCard(entry, cardIndex++);
+              showNotify(entry.name);
+            });
+          }
+        });
+
+        entries.forEach(e => prevKeys.add(e.key));
+      }
+
+      // Re-trigger visual updates on active floating cards on board to update likes/replies numbers live!
+      visibleEntries.forEach(entry => {
+        const cardElement = document.getElementById(`card-${entry.key}`);
+        if (cardElement) {
+          const lCount = entry.likes || 0;
+          const rObj = entry.replies || {};
+          const rCount = Object.keys(rObj).length;
+          
+          const badgeField = cardElement.querySelector('.flex.items-center.gap-2.text-\\[9px\\]');
+          if (badgeField) {
+            badgeField.innerHTML = `
+              <span class="flex items-center gap-0.5">❤️ ${lCount}</span>
+              <span class="flex items-center gap-0.5">💬 ${rCount}</span>
+            `;
+          }
+        }
+      });
+    });
+
+    // Helper Wind Gust function
+    function blowWindGust() {
+      const breeze = document.getElementById('wind-breeze');
+      if (!breeze) return;
+
+      // Reset and trigger wind sweep
+      breeze.style.transition = 'none';
+      breeze.style.left = '-350px';
+      breeze.style.opacity = '1';
+
+      setTimeout(() => {
+        breeze.style.transition = 'left 2.0s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+        breeze.style.left = '105%';
+        
+        setTimeout(() => {
+          breeze.style.opacity = '0';
+        }, 1600);
+      }, 50);
+
+      // Trigger card flutter staggered left-to-right
+      const cardFloats = document.querySelectorAll('.letter-card .card-float');
+      cardFloats.forEach((card) => {
+        const parentCard = card.closest('.letter-card');
+        if (!parentCard) return;
+
+        const leftPct = parseFloat(parentCard.style.left || '50');
+        const delayMs = (leftPct / 100) * 1600;
+
+        setTimeout(() => {
+          card.classList.add('wind-flutter');
+          setTimeout(() => {
+            card.classList.remove('wind-flutter');
+          }, 2900);
+        }, delayMs);
+      });
+    }
+
+    // 1. Regular 60 seconds (1 minute) interval
+    setInterval(blowWindGust, 60000);
+
+    // 2. Demonstration wind blow 8 seconds after page load for immediate delight
+    setTimeout(blowWindGust, 8000);
+
+  </script>
+</body>
+</html>
